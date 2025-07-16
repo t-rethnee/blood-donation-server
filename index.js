@@ -349,7 +349,7 @@ app.patch("/api/donation-requests/status/:id", async (req, res) => {
     
     const count = await usersCollection.countDocuments({ role: "donor" });
    
-    // const count = await usersCollection.countDocuments({ isDonor: true });
+   
 
     res.json({ count });
   } catch (err) {
