@@ -4,8 +4,18 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-
 dotenv.config();
+
+
+// Import your Firebase Admin and verifyToken middleware
+const admin = require("./config/firebaseAdmin");
+const verifyToken = require("./middleware/verifyToken");
+
+const adminVerify = require('./middleware/adminVerify');
+const volunteerVerify = require('./middleware/volunteerVerify');
+
+
+
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.PAYMENT_GATEWAY_KEY); // Add your key in .env
 
@@ -27,11 +37,33 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const checkRole = (allowedRoles) => {
+  return async (req, res, next) => {
+    try {
+      const email = req.user.email; // verifyToken middleware থেকে আসা
+      if (!email) return res.status(401).json({ message: "Unauthorized" });
+
+      const user = await usersCollection.findOne({ email });
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      if (!allowedRoles.includes(user.role)) {
+        return res.status(403).json({ message: "Forbidden: Insufficient role" });
+      }
+
+      // role ঠিক আছে, এগিয়ে যাও
+      next();
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  };
+};
+
 
 async function run() {
   try {
-    await client.connect();
-    console.log("✅ MongoDB connected");
+   // await client.connect();
+   // console.log("✅ MongoDB connected");
 
     const db = client.db("blood_donation_app");
 
@@ -67,10 +99,27 @@ async function run() {
       res.status(201).json({ insertedId: result.insertedId });
     });
 
-    app.get("/api/users/:email", async (req, res) => {
-      const user = await usersCollection.findOne({ email: req.params.email });
-      user ? res.json(user) : res.status(404).json({ message: "User not found" });
-    });
+    app.get("/api/users/:email", verifyToken, async (req, res) => {
+  const requestedEmail = req.params.email;
+  const tokenEmail = req.user.email;  // verifyToken middleware থেকে আসা email
+
+  // Check if token email and requested email match
+  if (requestedEmail !== tokenEmail) {
+    return res.status(403).json({ message: "Forbidden: Email mismatch" });
+  }
+
+  try {
+    const user = await usersCollection.findOne({ email: requestedEmail });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 
     app.put("/api/users/:email", async (req, res) => {
       const { email } = req.params;
@@ -206,41 +255,6 @@ async function run() {
       res.json({ message: "Confirmed", modifiedCount: update.modifiedCount });
     });
 
-//     app.patch("/api/donation-requests/status/:id", async (req, res) => {
-//   const { status, donorName, donorEmail } = req.body;
-
-//   const validStatuses = ["pending", "inprogress", "done", "canceled"];
-//   if (!validStatuses.includes(status)) {
-//     return res.status(400).json({ message: "Invalid status" });
-//   }
-
-//   const updateData = { status };
-
-//   // If status is 'inprogress', donor info should be saved too
-//   if (status === "inprogress") {
-//     if (!donorName || !donorEmail) {
-//       return res.status(400).json({ message: "Donor name and email are required when status is inprogress" });
-//     }
-//     updateData.donorName = donorName;
-//     updateData.donorEmail = donorEmail;
-//   } else {
-//     // If status is not inprogress, clear donor info for consistency
-//     updateData.donorName = null;
-//     updateData.donorEmail = null;
-//   }
-
-//   try {
-//     const result = await donationRequests.updateOne(
-//       { _id: new ObjectId(req.params.id) },
-//       { $set: updateData }
-//     );
-
-//     res.json({ modifiedCount: result.modifiedCount });
-//   } catch (error) {
-//     console.error("Error updating status:", error);
-//     res.status(500).json({ message: "Server error while updating status" });
-//   }
-// });
 
 
    app.delete("/api/donation-requests/:id", async (req, res) => {
@@ -514,7 +528,7 @@ app.patch("/api/donation-requests/:id/status", async (req, res) => {
 
 
 
- // ✅ Create Stripe Payment Intent
+ //  Create Stripe Payment Intent
     app.post("/create-payment-intent", async (req, res) => {
       const { amount } = req.body;
       const amountInCents = parseInt(amount * 100);
@@ -577,31 +591,7 @@ app.post("/fundings", async (req, res) => {
       const result = await fundingCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
-    // ✅ Total Funding for Volunteer/Admin Dashboard
-// ✅ GET: Total Funding Amount
-// app.get("/api/admin/stats/funds", async (req, res) => {
-//    //console.log("GET /api/admin/stats/funds called"); 
-//   try {
-//     const result = await fundingCollection.aggregate([
-//       {
-//         $group: {
-//           _id: null,
-//           total: { $sum: "$amount" },
-//         },
-//       },
-//     ]).toArray();
-//     console.log("Aggregation raw result:", result);
-
-//     res.send({ total: result[0]?.total || 0 });
-//   } catch (error) {
-//     console.error("Error fetching total funds:", error);
-//     res.status(500).send({ error: error.message });
-//   }
-// });
-// app.get("/test", (req, res) => {
-//   console.log("Test route hit");
-//   res.send("Test route is working");
-// });
+    
 app.get("/api/admin/stats/funds/simple-sum", async (req, res) => {
   try {
     const allFundings = await fundingCollection.find().toArray();
@@ -613,14 +603,6 @@ app.get("/api/admin/stats/funds/simple-sum", async (req, res) => {
     res.status(500).send({ error: error.message });
   }
 });
-
-
-
-// const count = await fundingCollection.countDocuments();
-// console.log("Number of documents in fundings collection:", count);
-
-
-    //console.log("Funding routes are working...");
 
 
   } catch (error) {
