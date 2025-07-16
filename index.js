@@ -554,7 +554,7 @@ app.post("/fundings", async (req, res) => {
   try {
     const fundData = req.body;
 
-    // ✅ Convert amount to a number
+    // Convert amount to a number
     fundData.amount = Number(fundData.amount);
 
     // ✅ Add createdAt field if missing
@@ -571,7 +571,7 @@ app.post("/fundings", async (req, res) => {
 });
 
 
-     // ✅ Get All Fundings
+     //  Get All Fundings
     app.get("/fundings", async (req, res) => {
       const result = await fundingCollection.find().sort({ _id: -1 }).toArray();
       res.send(result);
