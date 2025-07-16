@@ -461,7 +461,7 @@ app.get("/api/volunteer/donation-requests", async (req, res) => {
   try {
     const { status } = req.query;
 
-    // Build optional filter
+    
     const filter = {};
     if (status && status !== "all") {
       filter.status = status.toLowerCase();
