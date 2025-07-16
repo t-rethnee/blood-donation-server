@@ -456,7 +456,7 @@ app.patch("/api/donation-requests/status/:id", async (req, res) => {
     });
 
 
-   // ✅ GET all donation requests for volunteers (no pagination, optional status filter)
+   //  GET all donation requests for volunteers (no pagination, optional status filter)
 app.get("/api/volunteer/donation-requests", async (req, res) => {
   try {
     const { status } = req.query;
@@ -480,7 +480,7 @@ app.get("/api/volunteer/donation-requests", async (req, res) => {
 });
 
 
-// ================================================
+
 //  PATCH: Update donation request status by volunteer
 app.patch("/api/donation-requests/:id/status", async (req, res) => {
   try {
