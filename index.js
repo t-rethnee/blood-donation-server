@@ -557,7 +557,7 @@ app.post("/fundings", async (req, res) => {
     // Convert amount to a number
     fundData.amount = Number(fundData.amount);
 
-    // ✅ Add createdAt field if missing
+    //  Add createdAt field if missing
     if (!fundData.createdAt) {
       fundData.createdAt = new Date();
     }
@@ -576,7 +576,7 @@ app.post("/fundings", async (req, res) => {
       const result = await fundingCollection.find().sort({ _id: -1 }).toArray();
       res.send(result);
     });
- // ✅ Optional: Get Fundings by User Email
+ // Optional: Get Fundings by User Email
     app.get("/fundings/:email", async (req, res) => {
       const email = req.params.email;
       const result = await fundingCollection
@@ -585,7 +585,7 @@ app.post("/fundings", async (req, res) => {
         .toArray();
       res.send(result);
     });
-     // ✅ Optional: Delete a Funding (if needed)
+     //  Optional: Delete a Funding (if needed)
     app.delete("/fundings/:id", async (req, res) => {
       const id = req.params.id;
       const result = await fundingCollection.deleteOne({ _id: new ObjectId(id) });
