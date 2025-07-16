@@ -346,9 +346,9 @@ app.patch("/api/donation-requests/status/:id", async (req, res) => {
 
     app.get("/api/admin/stats/donors-count", async (req, res) => {
   try {
-    // Filter only donors
+    
     const count = await usersCollection.countDocuments({ role: "donor" });
-    // Or if you use isDonor flag:
+   
     // const count = await usersCollection.countDocuments({ isDonor: true });
 
     res.json({ count });
