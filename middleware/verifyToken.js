@@ -14,7 +14,7 @@ const verifyToken = async (req, res, next) => {
     const decodedUser = await admin.auth().verifyIdToken(token);
     console.log("Decoded user from token:", decodedUser);
     
-    req.user = decodedUser;  // এখানে user এর email ইত্যাদি থাকবে
+    req.user = decodedUser;  
     next();
   } catch (error) {
     return res.status(403).json({ error: "Unauthorized: Invalid token" });
